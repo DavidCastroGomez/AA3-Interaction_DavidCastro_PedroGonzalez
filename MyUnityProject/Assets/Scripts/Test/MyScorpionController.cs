@@ -39,7 +39,12 @@ namespace OctopusController
         float distanceDownThreshold;
         float lerpAlpha = 0.1f;
         Vector3[] storeFutureBases = new Vector3[6];
-        List<float> distances = new List<float>();
+        List<float> distanceBetweenBones = new List<float>();
+
+        //Make foot go up and down
+        float[] halfDistanceToNextBasePosition;
+        float[] actualHeight;
+        float stepHeight = 1f;
 
         Vector3[] positions;
         Vector3[][] returnPos;
@@ -74,11 +79,14 @@ namespace OctopusController
 
             returnPos = new Vector3[6][];
 
+            halfDistanceToNextBasePosition = new float[legFutureBases.Length];
+            actualHeight = new float[legFutureBases.Length];
+
 
 
             for (int i = 1; i < _legs[0].Bones.Length; i++)
             {
-                distances.Add(Math.Abs(Vector3.Distance(_legs[0].Bones[i].position, _legs[0].Bones[i - 1].position)));
+                distanceBetweenBones.Add(Math.Abs(Vector3.Distance(_legs[0].Bones[i].position, _legs[0].Bones[i - 1].position)));
             }
 
         }
@@ -181,6 +189,7 @@ namespace OctopusController
                 {
                     movement[i] = true;
                     storeFutureBases[i] = legFutureBases[i].position;
+                    halfDistanceToNextBasePosition[i] = Vector3.Distance(legFutureBases[i].position, _legs[i].Bones[0].position) / 2;
                     
                 }
                 else if(movement[i] && Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold)
@@ -217,23 +226,28 @@ namespace OctopusController
                 positions[k] = new Vector3(bones[k].position.x, bones[k].position.y, bones[k].position.z);
             }
 
-            
-            
+            //Check foot distance to half
+
+            float heightModifier = Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
+
             positions[0] = Vector3.LerpUnclamped(positions[0], futureBase, 0.4f);
 
-            
+            //actualHeight[] = positions[0]
+
+            positions[0].y = (float)Math.Sin(heightModifier) * stepHeight;
+
             for (int j = 1; j < positions.Length; j++)
             {
                 Vector3 direction = positions[j] - positions[j - 1];
 
                 direction.Normalize();
 
-                positions[j] = positions[j - 1] + direction * distances[j - 1];
+                positions[j] = positions[j - 1] + direction * distanceBetweenBones[j - 1];
             }
 
             positions[positions.Length - 1] = legBase.position;
 
-            distances.Reverse();
+            distanceBetweenBones.Reverse();
             
             for (int j = positions.Length - 2; j >= 0; j--)
             {
@@ -242,10 +256,10 @@ namespace OctopusController
                 direction.Normalize();
 
 
-                positions[j] = positions[j + 1] + direction * distances[j];
+                positions[j] = positions[j + 1] + direction * distanceBetweenBones[j];
             }
 
-            distances.Reverse();
+            distanceBetweenBones.Reverse();
 
             for (int i = 0; i < bones.Length - 1; i++)
             {

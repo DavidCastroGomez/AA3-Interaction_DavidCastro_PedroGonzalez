@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using OctopusController;
+using UnityEngine.UIElements;
 
 public class IK_Scorpion : MonoBehaviour
 {
@@ -25,6 +26,8 @@ public class IK_Scorpion : MonoBehaviour
     public Transform[] legs;
     public Transform[] legTargets;
     public Transform[] futureLegBases;
+    
+    private const float LEG_VERTICAL_OFFSET = 10f; 
 
     //DEBUG
     Vector3[] postions;
@@ -55,6 +58,23 @@ public class IK_Scorpion : MonoBehaviour
         if (animTime < animDuration)
         {
             Body.position = Vector3.Lerp(StartPos.position, EndPos.position, animTime / animDuration);
+
+            
+            foreach (Transform t in futureLegBases)
+            {
+                Vector3 startRayPosition = t.position + new Vector3(0, LEG_VERTICAL_OFFSET, 0);
+
+                Debug.DrawLine(startRayPosition, Vector3.down, Color.blue, LEG_VERTICAL_OFFSET);
+
+                RaycastHit[] hit = Physics.RaycastAll(startRayPosition, Vector3.down, LEG_VERTICAL_OFFSET * 2);
+
+                if(hit.Length > 0) 
+                {
+                    t.position = hit[hit.Length-1].point;
+                }   
+            }
+            
+
         }
         else if (animTime >= animDuration && animPlaying)
         {
