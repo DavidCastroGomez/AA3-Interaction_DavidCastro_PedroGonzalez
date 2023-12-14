@@ -64,7 +64,7 @@ public class IK_Scorpion : MonoBehaviour
             {
                 Vector3 startRayPosition = t.position + new Vector3(0, LEG_VERTICAL_OFFSET, 0);
 
-                Debug.DrawLine(startRayPosition, Vector3.down, Color.blue, LEG_VERTICAL_OFFSET);
+                //Debug.DrawLine(startRayPosition, startRayPosition + (Vector3.down * LEG_VERTICAL_OFFSET), Color.blue, LEG_VERTICAL_OFFSET);
 
                 RaycastHit[] hit = Physics.RaycastAll(startRayPosition, Vector3.down, LEG_VERTICAL_OFFSET * 2);
 
@@ -110,13 +110,15 @@ public class IK_Scorpion : MonoBehaviour
             {
                 Gizmos.DrawLine(v[i], v[i - 1]);
             }
-        }
+        }*/
 
         Vector3[] bbb = _myController.bbb();
 
         foreach(Vector3 bb in bbb)
         {
             Gizmos.DrawWireSphere(bb,0.1f);
-        }*/
+        }
+
     }
+
 }

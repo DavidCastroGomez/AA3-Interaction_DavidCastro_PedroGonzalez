@@ -38,13 +38,13 @@ namespace OctopusController
         float distanceUpThreshold;
         float distanceDownThreshold;
         float lerpAlpha = 0.1f;
-        Vector3[] storeFutureBases = new Vector3[6];
+        public Vector3[] storeFutureBases = new Vector3[6];
         List<float> distanceBetweenBones = new List<float>();
 
         //Make foot go up and down
         float[] halfDistanceToNextBasePosition;
         float[] actualHeight;
-        float stepHeight = 1f;
+        float stepHeight = 2f;
 
         Vector3[] positions;
         Vector3[][] returnPos;
@@ -61,28 +61,32 @@ namespace OctopusController
         {
             _legs = new MyTentacleController[LegRoots.Length];
             //Legs init
-            for(int i = 0; i < LegRoots.Length; i++)
+
+            legFutureBases = LegFutureBases;
+            legTargets = LegTargets;
+
+            actualHeight = new float[legFutureBases.Length];
+            halfDistanceToNextBasePosition = new float[legFutureBases.Length];
+            returnPos = new Vector3[6][];
+
+            for (int i = 0; i < LegRoots.Length; i++)
             {
                 _legs[i] = new MyTentacleController();
                 _legs[i].LoadTentacleJoints(LegRoots[i], TentacleMode.LEG);
                 //TODO: initialize anything needed for the FABRIK implementation
 
+
                 movement[i] = false;
 
                 storeFutureBases[i] = _legs[i].Bones[0].position;
+                actualHeight[i] = storeFutureBases[i].y;
+                halfDistanceToNextBasePosition[i] = 0;
             }
 
-            distanceUpThreshold = 0.1f;
+            distanceUpThreshold = 0.02f;
             distanceDownThreshold = 0.01f;
-            legFutureBases = LegFutureBases;
-            legTargets = LegTargets;
 
-            returnPos = new Vector3[6][];
-
-            halfDistanceToNextBasePosition = new float[legFutureBases.Length];
-            actualHeight = new float[legFutureBases.Length];
-
-
+    
 
             for (int i = 1; i < _legs[0].Bones.Length; i++)
             {
@@ -147,7 +151,6 @@ namespace OctopusController
                 playTailAnimation = true;
                 tailTarget = target;
 
-                Debug.Log("in");
                 return;
             }
 
@@ -189,10 +192,11 @@ namespace OctopusController
                 {
                     movement[i] = true;
                     storeFutureBases[i] = legFutureBases[i].position;
+                    actualHeight[i] = legFutureBases[i].position.y;
                     halfDistanceToNextBasePosition[i] = Vector3.Distance(legFutureBases[i].position, _legs[i].Bones[0].position) / 2;
                     
                 }
-                else if(movement[i] && Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold)
+                else if (movement[i] && Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold)
                 {
                     movement[i] = false;
                     storeFutureBases[i] = _legs[i].Bones[0].position;
@@ -227,14 +231,22 @@ namespace OctopusController
             }
 
             //Check foot distance to half
+            
+            if (halfDistanceToNextBasePosition[index] != 0)
+            {
+                float heightModifier = 1 - Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
 
-            float heightModifier = Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
+                Debug.Log(heightModifier.ToString() + " " + index.ToString());
 
-            positions[0] = Vector3.LerpUnclamped(positions[0], futureBase, 0.4f);
+                futureBase.y = actualHeight[index] + heightModifier * stepHeight;
 
-            //actualHeight[] = positions[0]
+                //positions[0].y = futureBase.y + (float)Math.Sin(heightModifier) * stepHeight;
 
-            positions[0].y = (float)Math.Sin(heightModifier) * stepHeight;
+            }
+
+
+            positions[0] = Vector3.Lerp(positions[0], futureBase, 0.4f);
+
 
             for (int j = 1; j < positions.Length; j++)
             {
