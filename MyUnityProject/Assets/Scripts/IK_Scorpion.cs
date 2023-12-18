@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using OctopusController;
 using UnityEngine.UIElements;
+using System;
+using UnityEngine.Assertions.Must;
 
 public class IK_Scorpion : MonoBehaviour
 {
@@ -26,7 +28,17 @@ public class IK_Scorpion : MonoBehaviour
     public Transform[] legs;
     public Transform[] legTargets;
     public Transform[] futureLegBases;
-    
+
+    [Header("Path")]
+    public Transform[] pathPoints;
+    int pathIndex = 0;
+    float speed = 5f;
+    float arrivedToPathPoint = 0.5f;
+
+    Vector3 originalDirection;
+    Vector3 angleX, angleY, angleZ;
+
+
     private const float LEG_VERTICAL_OFFSET = 10f;
 
     private const float BODY_HEIGHT = 0.5f;
@@ -37,9 +49,9 @@ public class IK_Scorpion : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        originalDirection = Body.forward;
         _myController.InitLegs(legs,futureLegBases,legTargets);
         _myController.InitTail(tail);
-
     }
 
     // Update is called once per frame
@@ -57,18 +69,16 @@ public class IK_Scorpion : MonoBehaviour
             animPlaying = true;
         }
 
-        if (animTime < animDuration)
+        if (animTime < animDuration && animTime > 0)
         {
+
+            SetBodyPosition();
 
             SetBasesHeight();
 
-            Body.position = Vector3.Lerp(StartPos.position, EndPos.position, animTime / animDuration);
-
-            SetBodyHeight();
+            //SetBodyHeight();
 
             RotateBody();
-
-
         }
         else if (animTime >= animDuration && animPlaying)
         {
@@ -77,6 +87,18 @@ public class IK_Scorpion : MonoBehaviour
         }
 
         _myController.UpdateIK();
+    }
+
+    private void SetBodyPosition()
+    {
+        if (pathIndex <= pathPoints.Length - 1)
+        {
+            Body.transform.position = Vector3.MoveTowards(Body.transform.position, pathPoints[pathIndex].transform.position, speed * Time.deltaTime);
+            if (Vector3.Distance(Body.transform.position, pathPoints[pathIndex].transform.position) < arrivedToPathPoint && pathIndex < pathPoints.Length - 1)
+            {
+                pathIndex++;
+            }
+        }
     }
 
     private void SetBasesHeight()
@@ -124,8 +146,14 @@ public class IK_Scorpion : MonoBehaviour
     {
         Roll();
         Pitch();
-    }
+        Yaw();
 
+        Vector3 totalDirection = angleX + angleY + angleZ;
+
+        totalDirection.Normalize();
+
+        Body.rotation = Quaternion.FromToRotation(originalDirection, totalDirection);
+    }
     private void Roll()
     {
 
@@ -147,14 +175,18 @@ public class IK_Scorpion : MonoBehaviour
         right /= legs.Length / 2;
         left /= legs.Length / 2;
 
-        Vector3 direction = right - left;
+        angleZ = right - left;
 
-        float angle = Vector3.Angle(direction.normalized, Vector3.up);
+        //angleZ = Vector3.Angle(direction.normalized, Vector3.up);
 
-        //Debug.Log(angle);
+    }
 
-        Body.rotation = Quaternion.AngleAxis((angle - 90), Vector3.forward);
 
+    private void Yaw()
+    {
+        angleY = Body.position - pathPoints[pathIndex].position;
+
+        //angleY = Vector3.Angle(direction.normalized, Vector3.forward);
     }
 
     private void Pitch()
@@ -165,14 +197,9 @@ public class IK_Scorpion : MonoBehaviour
         front = (legs[0].GetChild(0).position + legs[0].GetChild(0).position) / 2;
         back = (legs[legs.Length - 1].GetChild(0).position + legs[legs.Length - 2].GetChild(0).position) / 2;
 
-        Vector3 direction = back - front;
+        angleX = back - front;
 
-        float angle = Vector3.Angle(direction.normalized, Vector3.up);
-
-        Debug.Log(angle);
-
-        Body.rotation = Quaternion.AngleAxis((angle - 90), Vector3.right);
-
+        //angleX = Vector3.Angle(direction.normalized, Vector3.up);
     }
 
     //Function to send the tail target transform to the dll
