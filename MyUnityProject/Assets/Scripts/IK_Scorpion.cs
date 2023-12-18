@@ -27,7 +27,9 @@ public class IK_Scorpion : MonoBehaviour
     public Transform[] legTargets;
     public Transform[] futureLegBases;
     
-    private const float LEG_VERTICAL_OFFSET = 10f; 
+    private const float LEG_VERTICAL_OFFSET = 10f;
+
+    private const float BODY_HEIGHT = 0.8f;
 
     //DEBUG
     Vector3[] postions;
@@ -57,23 +59,15 @@ public class IK_Scorpion : MonoBehaviour
 
         if (animTime < animDuration)
         {
+
+            SetBasesHeight();
+
             Body.position = Vector3.Lerp(StartPos.position, EndPos.position, animTime / animDuration);
 
-            
-            foreach (Transform t in futureLegBases)
-            {
-                Vector3 startRayPosition = t.position + new Vector3(0, LEG_VERTICAL_OFFSET, 0);
+            SetBodyHeight();
 
-                //Debug.DrawLine(startRayPosition, startRayPosition + (Vector3.down * LEG_VERTICAL_OFFSET), Color.blue, LEG_VERTICAL_OFFSET);
 
-                RaycastHit[] hit = Physics.RaycastAll(startRayPosition, Vector3.down, LEG_VERTICAL_OFFSET * 2);
 
-                if(hit.Length > 0) 
-                {
-                    t.position = hit[hit.Length-1].point;
-                }   
-            }
-            
 
         }
         else if (animTime >= animDuration && animPlaying)
@@ -84,7 +78,51 @@ public class IK_Scorpion : MonoBehaviour
 
         _myController.UpdateIK();
     }
-    
+
+    private void SetBasesHeight()
+    {
+        foreach (Transform t in futureLegBases)
+        {
+            Vector3 startRayPosition = t.position + new Vector3(0, LEG_VERTICAL_OFFSET, 0);
+
+            Debug.DrawLine(startRayPosition, startRayPosition + (Vector3.down * LEG_VERTICAL_OFFSET), Color.blue, 0.016f);
+
+            RaycastHit[] allHit = Physics.RaycastAll(startRayPosition, Vector3.down, LEG_VERTICAL_OFFSET * 3);
+
+            if (allHit.Length > 0)
+            {
+
+                Vector3 upperPoint = Vector3.zero;
+
+                foreach (RaycastHit hit in allHit)
+                {
+                    if (hit.point.y > upperPoint.y)
+                    {
+                        upperPoint = hit.point;
+                    }
+                }
+
+                t.position = upperPoint;
+            }
+        }
+    }
+
+    private void SetBodyHeight()
+    {
+        float height = 0;
+
+        foreach (Transform t in legs)
+        {
+            height += t.GetChild(0).position.y;
+        }
+
+        height /= legs.Length;
+
+        Body.position = new Vector3(Body.position.x, height + BODY_HEIGHT, Body.position.z);
+
+    }
+ 
+
     //Function to send the tail target transform to the dll
     public void NotifyTailTarget()
     {
@@ -116,7 +154,8 @@ public class IK_Scorpion : MonoBehaviour
 
         foreach(Vector3 bb in bbb)
         {
-            Gizmos.DrawWireSphere(bb,0.1f);
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(bb,0.5f);
         }
 
     }

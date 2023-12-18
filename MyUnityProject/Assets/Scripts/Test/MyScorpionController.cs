@@ -44,7 +44,7 @@ namespace OctopusController
         //Make foot go up and down
         float[] halfDistanceToNextBasePosition;
         float[] actualHeight;
-        float stepHeight = 2f;
+        float stepHeight = 1f;
 
         Vector3[] positions;
         Vector3[][] returnPos;
@@ -83,8 +83,8 @@ namespace OctopusController
                 halfDistanceToNextBasePosition[i] = 0;
             }
 
-            distanceUpThreshold = 0.02f;
-            distanceDownThreshold = 0.01f;
+            distanceUpThreshold = 1.5f;
+            distanceDownThreshold = 0.5f;
 
     
 
@@ -188,18 +188,24 @@ namespace OctopusController
 
             for(int i = 0; i < _legs.Length; i++)
             {
-                if (Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) > distanceUpThreshold && !movement[i])
+                if (Vector3.Distance(_legs[i].Bones[0].position, legFutureBases[i].position) > distanceUpThreshold && !movement[i])
                 {
                     movement[i] = true;
                     storeFutureBases[i] = legFutureBases[i].position;
                     actualHeight[i] = legFutureBases[i].position.y;
-                    halfDistanceToNextBasePosition[i] = Vector3.Distance(legFutureBases[i].position, _legs[i].Bones[0].position) / 2;
+                    halfDistanceToNextBasePosition[i] = Vector3.Distance(storeFutureBases[i], _legs[i].Bones[0].position) / 2;
+
+                    if(i == 1)
+                    {
+                        Debug.Log("NEW STEP");
+                    }
+
                     
                 }
                 else if (movement[i] && Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold)
                 {
                     movement[i] = false;
-                    storeFutureBases[i] = _legs[i].Bones[0].position;
+                    _legs[i].Bones[0].position = storeFutureBases[i];
 
                 }
 
@@ -236,11 +242,10 @@ namespace OctopusController
             {
                 float heightModifier = 1 - Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
 
-                Debug.Log(heightModifier.ToString() + " " + index.ToString());
+                if(index == 1)
+                    Debug.Log(heightModifier.ToString() + " " + index.ToString());
 
-                futureBase.y = actualHeight[index] + heightModifier * stepHeight;
-
-                //positions[0].y = futureBase.y + (float)Math.Sin(heightModifier) * stepHeight;
+                positions[0].y = futureBase.y + heightModifier * stepHeight;
 
             }
 
