@@ -197,12 +197,12 @@ namespace OctopusController
 
                     if(i == 1)
                     {
-                        Debug.Log("NEW STEP");
+                        //Debug.Log("NEW STEP");
                     }
 
                     
                 }
-                else if (movement[i] && Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold)
+                else if (movement[i] && (Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold || Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) > distanceUpThreshold * 2))
                 {
                     movement[i] = false;
                     _legs[i].Bones[0].position = storeFutureBases[i];
@@ -243,7 +243,7 @@ namespace OctopusController
                 float heightModifier = 1 - Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
 
                 if(index == 1)
-                    Debug.Log(heightModifier.ToString() + " " + index.ToString());
+                    //Debug.Log(heightModifier.ToString() + " " + index.ToString());
 
                 positions[0].y = futureBase.y + heightModifier * stepHeight;
 

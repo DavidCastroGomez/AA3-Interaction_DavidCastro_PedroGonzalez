@@ -29,7 +29,7 @@ public class IK_Scorpion : MonoBehaviour
     
     private const float LEG_VERTICAL_OFFSET = 10f;
 
-    private const float BODY_HEIGHT = 0.8f;
+    private const float BODY_HEIGHT = 0.5f;
 
     //DEBUG
     Vector3[] postions;
@@ -66,7 +66,7 @@ public class IK_Scorpion : MonoBehaviour
 
             SetBodyHeight();
 
-
+            RotateBody();
 
 
         }
@@ -111,17 +111,69 @@ public class IK_Scorpion : MonoBehaviour
     {
         float height = 0;
 
-        foreach (Transform t in legs)
-        {
-            height += t.GetChild(0).position.y;
-        }
+        height = (legs[0].GetChild(0).position.y + legs[1].GetChild(0).position.y);
+        
 
-        height /= legs.Length;
+        height /= 2;
 
         Body.position = new Vector3(Body.position.x, height + BODY_HEIGHT, Body.position.z);
 
     }
- 
+
+    private void RotateBody()
+    {
+        Roll();
+        Pitch();
+    }
+
+    private void Roll()
+    {
+
+        Vector3 right = Vector3.zero;
+        Vector3 left = Vector3.zero;
+
+        for (int i = 0; i < legs.Length; i++)
+        {
+            if (i % 2 == 0)
+            {
+                right += legs[i].GetChild(0).position;
+            }
+            else
+            {
+                left += legs[i].GetChild(0).position;
+            }
+        }
+
+        right /= legs.Length / 2;
+        left /= legs.Length / 2;
+
+        Vector3 direction = right - left;
+
+        float angle = Vector3.Angle(direction.normalized, Vector3.up);
+
+        //Debug.Log(angle);
+
+        Body.rotation = Quaternion.AngleAxis((angle - 90), Vector3.forward);
+
+    }
+
+    private void Pitch()
+    {
+        Vector3 front = Vector3.zero;
+        Vector3 back = Vector3.zero;
+
+        front = (legs[0].GetChild(0).position + legs[0].GetChild(0).position) / 2;
+        back = (legs[legs.Length - 1].GetChild(0).position + legs[legs.Length - 2].GetChild(0).position) / 2;
+
+        Vector3 direction = back - front;
+
+        float angle = Vector3.Angle(direction.normalized, Vector3.up);
+
+        Debug.Log(angle);
+
+        Body.rotation = Quaternion.AngleAxis((angle - 90), Vector3.right);
+
+    }
 
     //Function to send the tail target transform to the dll
     public void NotifyTailTarget()
