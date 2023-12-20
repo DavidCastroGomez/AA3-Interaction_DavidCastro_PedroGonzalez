@@ -50,7 +50,7 @@ namespace OctopusController
         //Make foot go up and down
         float[] halfDistanceToNextBasePosition;
         float[] actualHeight;
-        float stepHeight = 1f;
+        float stepHeight;
 
         Vector3[] positions;
         Vector3[][] returnPos;
@@ -93,6 +93,7 @@ namespace OctopusController
             distanceDownThreshold = 0.3f;
 
             timeToMoveLeg = 0.2f;
+            stepHeight = 0.33f;
 
 
             for (int i = 1; i < _legs[0].Bones.Length; i++)
@@ -250,19 +251,21 @@ namespace OctopusController
 
             //Check foot distance to half
             
-            if (halfDistanceToNextBasePosition[index] != 0)
-            {
-                float heightModifier = 1 - Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
-
-                    //Debug.Log(heightModifier.ToString() + " " + index.ToString());
-
-                //positions[0].y = futureBase.y + heightModifier * stepHeight;
-
-            }
+            
 
             stepTimePerLeg[index] += Time.deltaTime;
 
             positions[0] = Vector3.Lerp(initialStepPosition[index], storeFutureBases[index], stepTimePerLeg[index] / timeToMoveLeg);
+
+            if (halfDistanceToNextBasePosition[index] != 0)
+            {
+                float heightModifier = 1 - Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
+
+                //Debug.Log(heightModifier.ToString() + " " + index.ToString());
+
+                positions[0].y = futureBase.y + heightModifier * stepHeight;
+
+            }
 
 
             for (int j = 1; j < positions.Length; j++)

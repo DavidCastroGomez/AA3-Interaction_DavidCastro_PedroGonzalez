@@ -49,7 +49,7 @@ public class IK_Scorpion : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        originalDirection = Body.forward;
+        originalDirection = -Body.forward;
         _myController.InitLegs(legs,futureLegBases,legTargets);
         _myController.InitTail(tail);
     }
@@ -74,11 +74,11 @@ public class IK_Scorpion : MonoBehaviour
 
             SetBodyPosition();
 
-            //SetBasesHeight();
+            SetBasesHeight();
 
-            //SetBodyHeight();
+            SetBodyHeight();
 
-            //RotateBody();
+            RotateBody();
         }
         else if (animTime >= animDuration && animPlaying)
         {
@@ -119,11 +119,8 @@ public class IK_Scorpion : MonoBehaviour
 
     private void SetBodyHeight()
     {
-        float height = 0;
-
-        height = (legs[0].GetChild(0).position.y + legs[1].GetChild(0).position.y);
+        float height = (futureLegBases[2].position.y + futureLegBases[3].position.y);
         
-
         height /= 2;
 
         Body.position = new Vector3(Body.position.x, height + BODY_HEIGHT, Body.position.z);
@@ -172,7 +169,7 @@ public class IK_Scorpion : MonoBehaviour
 
     private void Yaw()
     {
-        angleY = Body.position - pathPoints[pathIndex].position;
+        angleY = pathPoints[pathIndex].position - Body.position;
 
         //angleY = Vector3.Angle(direction.normalized, Vector3.forward);
     }
@@ -185,7 +182,7 @@ public class IK_Scorpion : MonoBehaviour
         front = (legs[0].GetChild(0).position + legs[0].GetChild(0).position) / 2;
         back = (legs[legs.Length - 1].GetChild(0).position + legs[legs.Length - 2].GetChild(0).position) / 2;
 
-        angleX = back - front;
+        angleX = front - back;
 
         //angleX = Vector3.Angle(direction.normalized, Vector3.up);
     }
@@ -206,7 +203,7 @@ public class IK_Scorpion : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        
+        /*
         Vector3[][] aaa = _myController.aaa();
 
         foreach (Vector3[] v in aaa)
@@ -224,6 +221,13 @@ public class IK_Scorpion : MonoBehaviour
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(bb,0.5f);
         }
+        */
+
+        foreach (Transform t in futureLegBases) {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawWireSphere(t.position, 0.3f);
+        }
+
 
     }
 
