@@ -74,11 +74,11 @@ public class IK_Scorpion : MonoBehaviour
 
             SetBodyPosition();
 
-            SetBasesHeight();
+            //SetBasesHeight();
 
             //SetBodyHeight();
 
-            RotateBody();
+            //RotateBody();
         }
         else if (animTime >= animDuration && animPlaying)
         {
@@ -107,25 +107,13 @@ public class IK_Scorpion : MonoBehaviour
         {
             Vector3 startRayPosition = t.position + new Vector3(0, LEG_VERTICAL_OFFSET, 0);
 
-            Debug.DrawLine(startRayPosition, startRayPosition + (Vector3.down * LEG_VERTICAL_OFFSET), Color.blue, 0.016f);
+            //Debug.DrawLine(startRayPosition, startRayPosition + (Vector3.down * LEG_VERTICAL_OFFSET), Color.blue, 0.016f);
 
-            RaycastHit[] allHit = Physics.RaycastAll(startRayPosition, Vector3.down, LEG_VERTICAL_OFFSET * 3);
+            RaycastHit hit;
 
-            if (allHit.Length > 0)
-            {
+            Physics.Raycast(startRayPosition, Vector3.down, out hit, LEG_VERTICAL_OFFSET * 3);
 
-                Vector3 upperPoint = Vector3.zero;
-
-                foreach (RaycastHit hit in allHit)
-                {
-                    if (hit.point.y > upperPoint.y)
-                    {
-                        upperPoint = hit.point;
-                    }
-                }
-
-                t.position = upperPoint;
-            }
+            t.position = hit.point;
         }
     }
 
@@ -218,7 +206,7 @@ public class IK_Scorpion : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        /*
+        
         Vector3[][] aaa = _myController.aaa();
 
         foreach (Vector3[] v in aaa)
@@ -227,7 +215,7 @@ public class IK_Scorpion : MonoBehaviour
             {
                 Gizmos.DrawLine(v[i], v[i - 1]);
             }
-        }*/
+        }
 
         Vector3[] bbb = _myController.bbb();
 
