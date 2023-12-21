@@ -5,6 +5,7 @@ using OctopusController;
 using UnityEngine.UIElements;
 using System;
 using UnityEngine.Assertions.Must;
+using UnityEngine.Animations;
 
 public class IK_Scorpion : MonoBehaviour
 {
@@ -19,6 +20,9 @@ public class IK_Scorpion : MonoBehaviour
     public Transform Body;
     public Transform StartPos;
     public Transform EndPos;
+
+    public Transform upPoint;
+    private float upPointHeight;
 
     [Header("Tail")]
     public Transform tailTarget;
@@ -38,6 +42,8 @@ public class IK_Scorpion : MonoBehaviour
     Vector3 originalDirection;
     Vector3 angleX, angleY, angleZ;
 
+    Vector3[] normals;
+
 
     private const float LEG_VERTICAL_OFFSET = 10f;
 
@@ -50,6 +56,9 @@ public class IK_Scorpion : MonoBehaviour
     void Start()
     {
         originalDirection = -Body.forward;
+        normals = new Vector3[legs.Length];
+        upPointHeight = upPoint.localPosition.y;
+
         _myController.InitLegs(legs,futureLegBases,legTargets);
         _myController.InitTail(tail);
     }
@@ -78,7 +87,8 @@ public class IK_Scorpion : MonoBehaviour
 
             SetBodyHeight();
 
-            RotateBody();
+            if (Vector3.Distance(pathPoints[pathPoints.Length - 1].position, Body.position) > arrivedToPathPoint)
+                RotateBody();
         }
         else if (animTime >= animDuration && animPlaying)
         {
@@ -103,9 +113,9 @@ public class IK_Scorpion : MonoBehaviour
 
     private void SetBasesHeight()
     {
-        foreach (Transform t in futureLegBases)
+        for(int i = 0; i < futureLegBases.Length; i++)
         {
-            Vector3 startRayPosition = t.position + new Vector3(0, LEG_VERTICAL_OFFSET, 0);
+            Vector3 startRayPosition = futureLegBases[i].position + new Vector3(0, LEG_VERTICAL_OFFSET, 0);
 
             //Debug.DrawLine(startRayPosition, startRayPosition + (Vector3.down * LEG_VERTICAL_OFFSET), Color.blue, 0.016f);
 
@@ -113,7 +123,9 @@ public class IK_Scorpion : MonoBehaviour
 
             Physics.Raycast(startRayPosition, Vector3.down, out hit, LEG_VERTICAL_OFFSET * 3);
 
-            t.position = hit.point;
+            futureLegBases[i].position = hit.point;
+
+            normals[i] = hit.normal;
         }
     }
 
@@ -129,63 +141,28 @@ public class IK_Scorpion : MonoBehaviour
 
     private void RotateBody()
     {
-        Roll();
-        Pitch();
-        Yaw();
+        Vector3 totalDirection = Vector3.zero;
 
-        Vector3 totalDirection = angleX + angleY + angleZ;
+        foreach (Vector3 v in normals)
+        {
+            totalDirection += v;
+        }
 
         totalDirection.Normalize();
 
-        Body.rotation = Quaternion.FromToRotation(originalDirection, totalDirection);
+        Vector3 newPosition = Vector3.Lerp(upPoint.position, Body.position + totalDirection * upPointHeight, speed * Time.deltaTime);
+
+        upPoint.position = new Vector3(newPosition.x, Body.position.y + upPointHeight, newPosition.z);
+
+        Vector3 direction = (newPosition - Body.position).normalized;
+
+        Vector3 cross = Vector3.Cross(direction, Body.up);
+
+        float angle = Vector3.Angle(direction, Body.up);
+
+        Body.rotation = Quaternion.Lerp(Body.rotation, Quaternion.LookRotation(Body.position - pathPoints[pathIndex].position , direction), speed * Time.deltaTime);
     }
-    private void Roll()
-    {
-
-        Vector3 right = Vector3.zero;
-        Vector3 left = Vector3.zero;
-
-        for (int i = 0; i < legs.Length; i++)
-        {
-            if (i % 2 == 0)
-            {
-                right += legs[i].GetChild(0).position;
-            }
-            else
-            {
-                left += legs[i].GetChild(0).position;
-            }
-        }
-
-        right /= legs.Length / 2;
-        left /= legs.Length / 2;
-
-        angleZ = right - left;
-
-        //angleZ = Vector3.Angle(direction.normalized, Vector3.up);
-
-    }
-
-
-    private void Yaw()
-    {
-        angleY = pathPoints[pathIndex].position - Body.position;
-
-        //angleY = Vector3.Angle(direction.normalized, Vector3.forward);
-    }
-
-    private void Pitch()
-    {
-        Vector3 front = Vector3.zero;
-        Vector3 back = Vector3.zero;
-
-        front = (legs[0].GetChild(0).position + legs[0].GetChild(0).position) / 2;
-        back = (legs[legs.Length - 1].GetChild(0).position + legs[legs.Length - 2].GetChild(0).position) / 2;
-
-        angleX = front - back;
-
-        //angleX = Vector3.Angle(direction.normalized, Vector3.up);
-    }
+   
 
     //Function to send the tail target transform to the dll
     public void NotifyTailTarget()

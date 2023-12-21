@@ -89,8 +89,8 @@ namespace OctopusController
                 halfDistanceToNextBasePosition[i] = 0;
             }
 
-            distanceUpThreshold = 1.3f;
-            distanceDownThreshold = 0.3f;
+            distanceUpThreshold = 0.9f;
+            distanceDownThreshold = 0.5f;
 
             timeToMoveLeg = 0.2f;
             stepHeight = 0.33f;
