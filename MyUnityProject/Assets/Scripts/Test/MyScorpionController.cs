@@ -38,8 +38,19 @@ namespace OctopusController
         float distanceUpThreshold;
         float distanceDownThreshold;
         float lerpAlpha = 0.1f;
-        Vector3[] storeFutureBases = new Vector3[6];
-        List<float> distances = new List<float>();
+        public Vector3[] storeFutureBases = new Vector3[6];
+        public Vector3[] initialStepPosition = new Vector3[6];
+        public float[] stepTimePerLeg = new float[6];
+        public float timeToMoveLeg;
+
+        List<float> distanceBetweenBones = new List<float>();
+
+        bool walking = false;
+
+        //Make foot go up and down
+        float[] halfDistanceToNextBasePosition;
+        float[] actualHeight;
+        float stepHeight;
 
         Vector3[] positions;
         Vector3[][] returnPos;
@@ -56,29 +67,38 @@ namespace OctopusController
         {
             _legs = new MyTentacleController[LegRoots.Length];
             //Legs init
-            for(int i = 0; i < LegRoots.Length; i++)
+
+            legFutureBases = LegFutureBases;
+            legTargets = LegTargets;
+
+            actualHeight = new float[legFutureBases.Length];
+            halfDistanceToNextBasePosition = new float[legFutureBases.Length];
+            returnPos = new Vector3[6][];
+
+            for (int i = 0; i < LegRoots.Length; i++)
             {
                 _legs[i] = new MyTentacleController();
                 _legs[i].LoadTentacleJoints(LegRoots[i], TentacleMode.LEG);
                 //TODO: initialize anything needed for the FABRIK implementation
 
+
                 movement[i] = false;
 
                 storeFutureBases[i] = _legs[i].Bones[0].position;
+                actualHeight[i] = storeFutureBases[i].y;
+                halfDistanceToNextBasePosition[i] = 0;
             }
 
-            distanceUpThreshold = 0.1f;
-            distanceDownThreshold = 0.01f;
-            legFutureBases = LegFutureBases;
-            legTargets = LegTargets;
+            distanceUpThreshold = 0.9f;
+            distanceDownThreshold = 0.5f;
 
-            returnPos = new Vector3[6][];
-
+            timeToMoveLeg = 0.2f;
+            stepHeight = 0.33f;
 
 
             for (int i = 1; i < _legs[0].Bones.Length; i++)
             {
-                distances.Add(Math.Abs(Vector3.Distance(_legs[0].Bones[i].position, _legs[0].Bones[i - 1].position)));
+                distanceBetweenBones.Add(Math.Abs(Vector3.Distance(_legs[0].Bones[i].position, _legs[0].Bones[i - 1].position)));
             }
 
         }
@@ -139,7 +159,6 @@ namespace OctopusController
                 playTailAnimation = true;
                 tailTarget = target;
 
-                Debug.Log("in");
                 return;
             }
 
@@ -152,7 +171,7 @@ namespace OctopusController
         //TODO: Notifies the start of the walking animation
         public void NotifyStartWalk()
         {
-
+            walking = true;
         }
 
         //TODO: create the apropiate animations and update the IK from the legs and tail
@@ -163,7 +182,9 @@ namespace OctopusController
             {
                 updateTail();
             }
-            updateLegPos();
+
+            if(walking)
+                updateLegPos();
         }
         #endregion
 
@@ -175,24 +196,35 @@ namespace OctopusController
             //check for the distance to the futureBase, then if it's too far away start moving the leg towards the future base position
             //
 
+
             for(int i = 0; i < _legs.Length; i++)
             {
-                if (Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) > distanceUpThreshold && !movement[i])
+                if (Vector3.Distance(_legs[i].Bones[0].position, legFutureBases[i].position) > distanceUpThreshold && !movement[i])
                 {
                     movement[i] = true;
                     storeFutureBases[i] = legFutureBases[i].position;
+                    initialStepPosition[i] = _legs[i].Bones[0].position;
+                    actualHeight[i] = legFutureBases[i].position.y;
+                    halfDistanceToNextBasePosition[i] = Vector3.Distance(storeFutureBases[i], _legs[i].Bones[0].position) / 2;
+                    stepTimePerLeg[i] = 0;
+
+                    if(i == 1)
+                    {
+                        //Debug.Log("NEW STEP");
+                    }
+
                     
                 }
-                else if(movement[i] && Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold)
+                else if (Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold)
+
                 {
                     movement[i] = false;
-                    storeFutureBases[i] = _legs[i].Bones[0].position;
+                    //_legs[i].Bones[0].position = storeFutureBases[i];
 
                 }
 
+
                 updateLegs(_legs[i].Bones, legTargets[i], storeFutureBases[i], i);
-
-
             }
 
 
@@ -217,23 +249,37 @@ namespace OctopusController
                 positions[k] = new Vector3(bones[k].position.x, bones[k].position.y, bones[k].position.z);
             }
 
+            //Check foot distance to half
             
             
-            positions[0] = Vector3.LerpUnclamped(positions[0], futureBase, 0.4f);
 
-            
-            for (int j = 1; j < positions.Length; j++)
+            stepTimePerLeg[index] += Time.deltaTime;
+
+            positions[0] = Vector3.Lerp(initialStepPosition[index], storeFutureBases[index], stepTimePerLeg[index] / timeToMoveLeg);
+
+            if (halfDistanceToNextBasePosition[index] != 0)
             {
+                float heightModifier = 1 - Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
+
+                //Debug.Log(heightModifier.ToString() + " " + index.ToString());
+
+                positions[0].y = futureBase.y + heightModifier * stepHeight;
+
+            }
+
+
+            for (int j = 1; j < positions.Length; j++)
+            { 
                 Vector3 direction = positions[j] - positions[j - 1];
 
                 direction.Normalize();
 
-                positions[j] = positions[j - 1] + direction * distances[j - 1];
+                positions[j] = positions[j - 1] + direction * distanceBetweenBones[j - 1];
             }
 
             positions[positions.Length - 1] = legBase.position;
 
-            distances.Reverse();
+            distanceBetweenBones.Reverse();
             
             for (int j = positions.Length - 2; j >= 0; j--)
             {
@@ -242,10 +288,10 @@ namespace OctopusController
                 direction.Normalize();
 
 
-                positions[j] = positions[j + 1] + direction * distances[j];
+                positions[j] = positions[j + 1] + direction * distanceBetweenBones[j];
             }
 
-            distances.Reverse();
+            distanceBetweenBones.Reverse();
 
             for (int i = 0; i < bones.Length - 1; i++)
             {
