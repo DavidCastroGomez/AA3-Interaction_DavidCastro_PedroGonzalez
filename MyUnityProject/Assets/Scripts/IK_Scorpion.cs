@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 using System;
 using UnityEngine.Assertions.Must;
 using UnityEngine.Animations;
+using UnityEngine.UI;
 
 public class IK_Scorpion : MonoBehaviour
 {
@@ -39,10 +40,19 @@ public class IK_Scorpion : MonoBehaviour
     float speed = 5f;
     float arrivedToPathPoint = 0.5f;
 
+
+    [Header("Sliders")]
+    public UnityEngine.UI.Slider forceSlider;
+    public UnityEngine.UI.Slider magnusSlider;
+
+    float forceSliderMultipier = 1000;
+    float magnusSliderMultipier = 500;
+
     Vector3 originalDirection;
     Vector3 angleX, angleY, angleZ;
 
     Vector3[] normals;
+
 
 
     private const float LEG_VERTICAL_OFFSET = 10f;
@@ -70,8 +80,29 @@ public class IK_Scorpion : MonoBehaviour
             animTime += Time.deltaTime;
 
         NotifyTailTarget();
+
+        if (Input.GetKey(KeyCode.Z))
+        {
+            magnusSlider.value -= Time.deltaTime * magnusSliderMultipier;
+        }
+
+        if (Input.GetKey(KeyCode.X))
+        {
+            magnusSlider.value += Time.deltaTime * magnusSliderMultipier;
+        }
+
+        if (Input.GetKey(KeyCode.Space) && !animPlaying)
+        {
+            forceSlider.value += Time.deltaTime * forceSliderMultipier;
+
+            if (forceSlider.value <= 0 || forceSlider.value >= forceSlider.maxValue)
+            {
+                forceSliderMultipier *= -1;
+            }
+
+        }
         
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyUp(KeyCode.Space) && !animPlaying)
         {
             NotifyStartWalk();
             animTime = 0;

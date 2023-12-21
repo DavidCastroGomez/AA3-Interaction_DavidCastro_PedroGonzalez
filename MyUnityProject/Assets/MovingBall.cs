@@ -8,9 +8,9 @@ public class MovingBall : MonoBehaviour
     IK_tentacles _myOctopus;
 
     //movement speed in units per second
-    [Range(-1.0f, 1.0f)]
+    [Range(-1.0f, 5.0f)]
     [SerializeField]
-    private float _movementSpeed = 5f;
+    private float _movementSpeed = 2.5f;
 
     Vector3 _dir;
 
