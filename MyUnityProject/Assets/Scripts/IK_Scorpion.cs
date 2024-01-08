@@ -80,7 +80,6 @@ public class IK_Scorpion : MonoBehaviour
 
         if (animTime < animDuration && animTime > 0)
         {
-
             SetBodyPosition();
 
             SetBasesHeight();
@@ -116,8 +115,6 @@ public class IK_Scorpion : MonoBehaviour
         for(int i = 0; i < futureLegBases.Length; i++)
         {
             Vector3 startRayPosition = futureLegBases[i].position + new Vector3(0, LEG_VERTICAL_OFFSET, 0);
-
-            //Debug.DrawLine(startRayPosition, startRayPosition + (Vector3.down * LEG_VERTICAL_OFFSET), Color.blue, 0.016f);
 
             RaycastHit hit;
 
