@@ -210,6 +210,7 @@ public class IK_Scorpion : MonoBehaviour
         SetBodyHeight();
 
         _myController.ResetLegs();
+        _myController.ResetTail();
 
     }
 
