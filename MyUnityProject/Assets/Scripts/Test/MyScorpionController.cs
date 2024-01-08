@@ -150,6 +150,10 @@ namespace OctopusController
         //TODO: Check when to start the animation towards target and implement Gradient Descent method to move the joints.
         public void NotifyTailTarget(Transform target)
         {
+            //Debug.Log(tailEndEffector.position);
+            //Debug.Log(target.position);
+            //Debug.Log(Vector3.Distance(target.position, tailEndEffector.position));
+
             if(Vector3.Distance(target.position, tailEndEffector.position) < animationRange && !playTailAnimation)
             {
                 playTailAnimation = true;
@@ -225,16 +229,16 @@ namespace OctopusController
 
 
         }
-
         //TODO: implement Gradient Descent method to move tail if necessary
         private void updateTail()
         {
+
             if (Vector3.Distance(tailTarget.position, tailEndEffector.position) > tailDistanceToStop)
             {
                 CCD();
             }
-        }
 
+        }
         //TODO: implement fabrik method to move legs 
         private void updateLegs(Transform[] bones, Transform legBase, Vector3 futureBase, int index)
         {
@@ -245,6 +249,10 @@ namespace OctopusController
                 positions[k] = new Vector3(bones[k].position.x, bones[k].position.y, bones[k].position.z);
             }
 
+            //Check foot distance to half
+            
+            
+
             stepTimePerLeg[index] += Time.deltaTime;
 
             positions[0] = Vector3.Lerp(initialStepPosition[index], storeFutureBases[index], stepTimePerLeg[index] / timeToMoveLeg);
@@ -253,7 +261,10 @@ namespace OctopusController
             {
                 float heightModifier = 1 - Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
 
+                //Debug.Log(heightModifier.ToString() + " " + index.ToString());
+
                 positions[0].y = futureBase.y + heightModifier * stepHeight;
+
             }
 
 
@@ -355,10 +366,16 @@ namespace OctopusController
                 }
 
                 prevPoint += rotation * tailBoneInverseDirection[i];
+
+                //_tail.Bones[i].position = prevPoint;
+
             }
+
+           //tailEndEffector.position = prevPoint;
 
             return prevPoint;
         }
+
 
         private Quaternion DivideByEscalar(Quaternion quat, float escalar)
         {
@@ -369,5 +386,7 @@ namespace OctopusController
             return quat;
         }
         #endregion
+
     }
+
 }
