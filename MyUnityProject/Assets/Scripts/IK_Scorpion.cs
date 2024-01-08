@@ -45,8 +45,8 @@ public class IK_Scorpion : MonoBehaviour
     public UnityEngine.UI.Slider forceSlider;
     public UnityEngine.UI.Slider magnusSlider;
 
-    float forceSliderMultipier = 1000;
-    float magnusSliderMultipier = 500;
+    float forceSliderMultipier = 100;
+    float magnusSliderMultipier = 1;
 
     Vector3 originalDirection;
     Vector3 angleX, angleY, angleZ;
@@ -95,7 +95,7 @@ public class IK_Scorpion : MonoBehaviour
         {
             forceSlider.value += Time.deltaTime * forceSliderMultipier;
 
-            if (forceSlider.value <= 0 || forceSlider.value >= forceSlider.maxValue)
+            if (forceSlider.value <= forceSlider.minValue || forceSlider.value >= forceSlider.maxValue)
             {
                 forceSliderMultipier *= -1;
             }
@@ -107,6 +107,7 @@ public class IK_Scorpion : MonoBehaviour
             NotifyStartWalk();
             animTime = 0;
             animPlaying = true;
+            _myController.SetFromSliderValues(magnusSlider.value, forceSlider.value);
         }
 
         if (animTime < animDuration && animTime > 0 && animPlaying)

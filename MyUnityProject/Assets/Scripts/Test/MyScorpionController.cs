@@ -55,6 +55,10 @@ namespace OctopusController
         Vector3[] positions;
         Vector3[][] returnPos;
 
+        //Magnus values
+        float magnus = .0f;
+        float force = .0f;
+
         #region public
         public Vector3[][] aaa()
         {
@@ -66,7 +70,6 @@ namespace OctopusController
         public void InitLegs(Transform[] LegRoots,Transform[] LegFutureBases, Transform[] LegTargets)
         {
             _legs = new MyTentacleController[LegRoots.Length];
-            //Legs init
 
             legFutureBases = LegFutureBases;
             legTargets = LegTargets;
@@ -79,8 +82,6 @@ namespace OctopusController
             {
                 _legs[i] = new MyTentacleController();
                 _legs[i].LoadTentacleJoints(LegRoots[i], TentacleMode.LEG);
-                //TODO: initialize anything needed for the FABRIK implementation
-
 
                 movement[i] = false;
 
@@ -107,7 +108,6 @@ namespace OctopusController
         {
             _tail = new MyTentacleController();
             _tail.LoadTentacleJoints(TailBase, TentacleMode.TAIL);
-            //TODO: Initialize anything needed for the Gradient Descent implementation
 
             tailEndEffector = _tail.EndEffectorSphere;
 
@@ -193,10 +193,6 @@ namespace OctopusController
         //TODO: Implement the leg base animations and logic
         private void updateLegPos()
         {
-            //check for the distance to the futureBase, then if it's too far away start moving the leg towards the future base position
-            //
-
-
             for(int i = 0; i < _legs.Length; i++)
             {
                 if (Vector3.Distance(_legs[i].Bones[0].position, legFutureBases[i].position) > distanceUpThreshold && !movement[i])
@@ -207,38 +203,31 @@ namespace OctopusController
                     actualHeight[i] = legFutureBases[i].position.y;
                     halfDistanceToNextBasePosition[i] = Vector3.Distance(storeFutureBases[i], _legs[i].Bones[0].position) / 2;
                     stepTimePerLeg[i] = 0;
-
-                    if(i == 1)
-                    {
-                        //Debug.Log("NEW STEP");
-                    }
-
-                    
                 }
                 else if (Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold)
-
                 {
                     movement[i] = false;
-                    //_legs[i].Bones[0].position = storeFutureBases[i];
-
                 }
-
 
                 updateLegs(_legs[i].Bones, legTargets[i], storeFutureBases[i], i);
             }
-
-
         }
+
+        public void SetFromSliderValues(float _magnus, float _force)
+        {
+            magnus = _magnus;
+            force = _force;
+        }
+
         //TODO: implement Gradient Descent method to move tail if necessary
         private void updateTail()
         {
-
             if (Vector3.Distance(tailTarget.position, tailEndEffector.position) > tailDistanceToStop)
             {
-                CCD();
+                CCD(new Vector3(magnus * -0.5f, 0f, 0f) + tailTarget.position);
             }
-
         }
+
         //TODO: implement fabrik method to move legs 
         private void updateLegs(Transform[] bones, Transform legBase, Vector3 futureBase, int index)
         {
@@ -249,10 +238,6 @@ namespace OctopusController
                 positions[k] = new Vector3(bones[k].position.x, bones[k].position.y, bones[k].position.z);
             }
 
-            //Check foot distance to half
-            
-            
-
             stepTimePerLeg[index] += Time.deltaTime;
 
             positions[0] = Vector3.Lerp(initialStepPosition[index], storeFutureBases[index], stepTimePerLeg[index] / timeToMoveLeg);
@@ -261,10 +246,7 @@ namespace OctopusController
             {
                 float heightModifier = 1 - Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
 
-                //Debug.Log(heightModifier.ToString() + " " + index.ToString());
-
                 positions[0].y = futureBase.y + heightModifier * stepHeight;
-
             }
 
 
@@ -317,24 +299,23 @@ namespace OctopusController
             returnPos[index] = positions;
         }
 
-        private void CCD()
+        private void CCD(Vector3 magnusTarget)
         {
             for (int i = 0; i < tailBoneAngles.Length; ++i)
             {
-                float distanceToTarget1 = Vector3.Distance(TheMath(), tailTarget.position);
-
+                float distanceToTarget1 = Vector3.Distance(magnusTarget, TheMath());
                 tailBoneAngles[i] += modifyDelta;
-                float distanceToTarget2 = Vector3.Distance(TheMath(), tailTarget.position);
+
+                float distanceToTarget2 = Vector3.Distance(magnusTarget, TheMath());
                 tailBoneAngles[i] -= modifyDelta;
 
-                tailBoneAngles[i] = tailBoneAngles[i] - 50 * ((distanceToTarget2 - distanceToTarget1) / modifyDelta);
+                tailBoneAngles[i] -= force * ((distanceToTarget2 - distanceToTarget1) / modifyDelta);
             }
             
             Quaternion rotation = _tail.Bones[0].rotation;
             
             for (int i = 0; i < tailBoneAngles.Length; i++)
             {
-
                 if (i == 0)
                 {
                     rotation *= Quaternion.AngleAxis(tailBoneAngles[i], Vector3.forward);
@@ -345,6 +326,11 @@ namespace OctopusController
                 }
 
                 _tail.Bones[i].rotation = rotation;
+
+                if (Vector3.Distance(magnusTarget, TheMath()) < .25f)
+                {
+                    break;
+                }
             }
             
         }
@@ -366,12 +352,7 @@ namespace OctopusController
                 }
 
                 prevPoint += rotation * tailBoneInverseDirection[i];
-
-                //_tail.Bones[i].position = prevPoint;
-
             }
-
-           //tailEndEffector.position = prevPoint;
 
             return prevPoint;
         }
@@ -396,5 +377,4 @@ namespace OctopusController
         #endregion
 
     }
-
 }
