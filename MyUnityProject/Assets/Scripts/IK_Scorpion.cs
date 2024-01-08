@@ -109,7 +109,7 @@ public class IK_Scorpion : MonoBehaviour
             animPlaying = true;
         }
 
-        if (animTime < animDuration && animTime > 0)
+        if (animTime < animDuration && animTime > 0 && animPlaying)
         {
 
             SetBodyPosition();
@@ -193,7 +193,25 @@ public class IK_Scorpion : MonoBehaviour
 
         Body.rotation = Quaternion.Lerp(Body.rotation, Quaternion.LookRotation(Body.position - pathPoints[pathIndex].position , direction), speed * Time.deltaTime);
     }
-   
+
+    public void ResetScorpion(Vector3 resetPos)
+    {
+        magnusSlider.value = 0;
+        forceSlider.value = 0;
+        animPlaying = false;
+
+        Body.position = resetPos;
+
+        pathIndex = 0;
+
+        SetBasesHeight();
+
+        SetBodyHeight();
+
+        _myController.ResetLegs();
+
+    }
+
 
     //Function to send the tail target transform to the dll
     public void NotifyTailTarget()

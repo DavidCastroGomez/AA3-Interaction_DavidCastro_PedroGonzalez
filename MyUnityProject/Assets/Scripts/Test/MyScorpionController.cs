@@ -376,6 +376,14 @@ namespace OctopusController
             return prevPoint;
         }
 
+        public void ResetLegs()
+        {
+            for(int i = 0; i < legFutureBases.Length; i++)
+            {
+                storeFutureBases[i] = legFutureBases[i].position;
+            }
+        }
+
 
         private Quaternion DivideByEscalar(Quaternion quat, float escalar)
         {
