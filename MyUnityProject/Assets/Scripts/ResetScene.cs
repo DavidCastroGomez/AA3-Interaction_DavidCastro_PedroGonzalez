@@ -22,9 +22,6 @@ public class ResetScene : MonoBehaviour
         scorpionPosition = scorpion.transform.position;
 
         iK_Scorpion = scorpion.GetComponent<IK_Scorpion>();
-
-
-
     }
 
     // Update is called once per frame
