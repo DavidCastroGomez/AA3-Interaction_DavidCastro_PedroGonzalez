@@ -16,7 +16,7 @@ public class MovingTarget: MonoBehaviour
     MovingMode _mode;
 
     //movement speed in units per second
-    [Range(-1.0f,1.0f)]
+    [Range(0f,3.0f)]
     [SerializeField]
     private float _movementSpeed = 5f;
 
@@ -25,9 +25,10 @@ public class MovingTarget: MonoBehaviour
     GameObject _region;
     float _xMin, _xMax, _yMin, _yMax;
 
-    Vector3 _dir;
+    public Vector3 _dir;
 
-   
+
+    GameObject _goalRegion;
     
 
     //variable added just to control whether we are 
@@ -117,7 +118,7 @@ public class MovingTarget: MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         if(_mode == MovingMode.USERTARGET)
-            _myOctopus.NotifyTarget(transform, collision.collider.transform);
+            _myOctopus.NotifyTarget(transform, collision.collider.gameObject);
 
         //Debug.Log("I am object " + name + "  and i enter collision with " + collision.collider.name);
     }
@@ -126,7 +127,7 @@ public class MovingTarget: MonoBehaviour
     private void OnCollisionStay(Collision collision)
     {
         if (_mode == MovingMode.USERTARGET)
-            _myOctopus.NotifyTarget(transform, collision.collider.transform);
+            _myOctopus.NotifyTarget(transform, collision.collider.gameObject);
         else if(_mode == MovingMode.RANDOM)
         {
             

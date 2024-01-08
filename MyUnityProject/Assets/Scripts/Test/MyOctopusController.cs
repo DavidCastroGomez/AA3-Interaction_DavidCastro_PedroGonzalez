@@ -14,8 +14,9 @@ namespace OctopusController
     {
         MyTentacleController[] _tentacles =new  MyTentacleController[4];
 
-        Transform _currentRegion;
+        GameObject _currentRegion;
         Transform _target;
+        int currentRegion = 2;
 
         Transform[] _randomTargets;// = new Transform[4];
 
@@ -95,9 +96,34 @@ namespace OctopusController
                     }
                 }
             }
+              
+        public void NotifyTarget(Transform target, GameObject region)
+        {
+            _currentRegion = region;
+            _target = target;
+
+            switch (_currentRegion.name) {
+                case "region1":
+                    currentRegion = 0;
+                    break;
+                case "region2":
+                    currentRegion = 1;
+                    break;
+                case "region3":
+                    currentRegion = 2;
+                    break;
+                case "region4":
+                    currentRegion = 3;
+                    break;
+            }
         }
 
         public void NotifyShoot() {
+            //TODO. what happens here?
+            Debug.Log("Shoot");
+
+            _randomTargets[currentRegion] = _target;
+
             wasBallShot = true;
         }
 

@@ -7,12 +7,20 @@ public class MovingBall : MonoBehaviour
     [SerializeField]
     IK_tentacles _myOctopus;
 
-    //movement speed in units per second
-    [Range(-1.0f, 1.0f)]
     [SerializeField]
-    private float _movementSpeed = 5f;
+    IK_Scorpion _scorpion;
+
+    //movement speed in units per second
+    [Range(-1.0f, 5.0f)]
+    [SerializeField]
+    private float _movementSpeed = 2.5f;
+
+    [SerializeField]
+    private Transform directionTarget;
 
     Vector3 _dir;
+
+    bool _isMoving = false;
 
     // Start is called before the first frame update
     void Start()
@@ -31,12 +39,25 @@ public class MovingBall : MonoBehaviour
         float verticalInput = Input.GetAxis("Vertical");
 
         //update the position
-        transform.position = transform.position + new Vector3(-horizontalInput * _movementSpeed * Time.deltaTime, verticalInput * _movementSpeed * Time.deltaTime, 0);
+        //transform.position = transform.position + new Vector3(-horizontalInput * _movementSpeed * Time.deltaTime, verticalInput * _movementSpeed * Time.deltaTime, 0);
+
+        if (_isMoving)
+        {
+            transform.position += _scorpion.forceSlider.value * _dir * Time.deltaTime;
+        }
 
     }
 
     private void OnCollisionEnter(Collision collision)
     {
+        _isMoving = true;
+        _dir = directionTarget.position - transform.position;
+        _dir.Normalize();
         _myOctopus.NotifyShoot();
+    }
+
+    public void ResetBall()
+    {
+        _isMoving = false;
     }
 }

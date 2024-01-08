@@ -46,7 +46,7 @@ public class IK_tentacles : MonoBehaviour
     #region public methods
 
 
-    public void NotifyTarget(Transform target, Transform region)
+    public void NotifyTarget(Transform target, GameObject region)
     {
         _myController.NotifyTarget(target, region);
 
