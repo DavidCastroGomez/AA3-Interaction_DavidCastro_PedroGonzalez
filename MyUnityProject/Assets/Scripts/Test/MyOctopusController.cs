@@ -14,7 +14,7 @@ namespace OctopusController
     {
         MyTentacleController[] _tentacles =new  MyTentacleController[4];
 
-        GameObject _currentRegion;
+        Transform _currentRegion;
         Transform _target;
         int currentRegion = 2;
 
@@ -96,13 +96,9 @@ namespace OctopusController
                     }
                 }
             }
-              
-        public void NotifyTarget(Transform target, GameObject region)
-        {
-            _currentRegion = region;
-            _target = target;
 
-            switch (_currentRegion.name) {
+            switch (_currentRegion.name)
+            {
                 case "region1":
                     currentRegion = 0;
                     break;
