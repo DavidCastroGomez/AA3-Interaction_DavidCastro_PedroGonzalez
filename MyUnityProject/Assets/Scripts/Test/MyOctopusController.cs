@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-
+using static UnityEngine.ParticleSystem;
+using UnityEngine.XR;
 
 namespace OctopusController
 {
@@ -11,7 +12,6 @@ namespace OctopusController
 
     public class MyOctopusController 
     {
-        
         MyTentacleController[] _tentacles =new  MyTentacleController[4];
 
         Transform _currentRegion;
@@ -22,7 +22,6 @@ namespace OctopusController
         //DEBUG
         Transform[][] positions = new Transform[4][];
 
-
         float _twistMin, _twistMax;
         float _swingMin, _swingMax;
 
@@ -30,23 +29,29 @@ namespace OctopusController
         float weight;
         float tolerance;
         int maxIterations;
+        bool wasBallShot = false;
+        int nearestTentacle = 0;
+        Vector3[] targetPositions;
+        bool[] alreadyLooped;
+        int[] attempts;
+        int maxAttempts;
+
+        //Defines
+        double angleComparative = 0.025;
+        float loopedTolerance = .1f;
+        float magnitudeTolerance = .001f;
+        float angleMultiplier = 57.3f;
 
         #region public methods
-        //DO NOT CHANGE THE PUBLIC METHODS!!
 
         public float TwistMin { set => _twistMin = value; }
         public float TwistMax { set => _twistMax = value; }
         public float SwingMin {  set => _swingMin = value; }
         public float SwingMax { set => _swingMax = value; }
         
-
         public void TestLogging(string objectName)
         {
-
-           
-            Debug.Log("hello, I am initializing my Octopus Controller in object "+objectName);
-
-            
+            Debug.Log("hello, I am initializing my Octopus Controller in object " + objectName);
         }
 
         public Transform[][] getPositions()
@@ -56,108 +61,131 @@ namespace OctopusController
 
         public void Init(Transform[] tentacleRoots, Transform[] randomTargets)
         {
+            alreadyLooped = new bool[4];
+            targetPositions = new Vector3[4];
+            attempts = new int[4];
+            maxAttempts = 10;
             _tentacles = new MyTentacleController[tentacleRoots.Length];
 
-            // foreach (Transform t in tentacleRoots)
             for(int i = 0;  i  < tentacleRoots.Length; i++)
             {
-
                 _tentacles[i] = new MyTentacleController();
                 _tentacles[i].LoadTentacleJoints(tentacleRoots[i],TentacleMode.TENTACLE);
-                //TODO: initialize any variables needed in ccd
                 weight = 0.5f;
                 tolerance = 0f;
                 maxIterations = 1;
             }
 
             _randomTargets = randomTargets;
-            //TODO: use the regions however you need to make sure each tentacle stays in its region
-
         }
 
-              
         public void NotifyTarget(Transform target, Transform region)
         {
             _currentRegion = region;
             _target = target;
+
+            if (wasBallShot)
+            {
+                float value = 0f;
+                for (int iter = 0; iter < _tentacles.Length; iter++)
+                {
+                    if ((region.position - _tentacles[iter].Bones[_tentacles[iter].Bones.Length - 1].position).magnitude < value)
+                    {
+                        nearestTentacle = iter;
+                    }
+                }
+            }
         }
 
         public void NotifyShoot() {
-            //TODO. what happens here?
-            Debug.Log("Shoot");
+            wasBallShot = true;
         }
-
 
         public void UpdateTentacles()
         {
-            //TODO: implement logic for the correct tentacle arm to stop the ball and implement CCD method
             update_ccd();
         }
-
-
-
-
         #endregion
 
 
         #region private and internal methods
-        //todo: add here anything that you need
 
         void update_ccd() 
         {
-           
-            for(int i = 0; i < maxIterations; i++) {
-                for (int tentacleNumber = 0; tentacleNumber < _tentacles.Length; tentacleNumber++)
+            for (int firstIter = 0; firstIter < _tentacles.Length; firstIter++)
+            {
+                Vector3 targetDir;
+                if (firstIter != nearestTentacle || !wasBallShot)
                 {
-                    //Get Bones
-                    Transform[] bones = new Transform[_tentacles[tentacleNumber].Bones.Length - 1];
-
-                    for (int j = 0; j < _tentacles[tentacleNumber].Bones.Length - 1; j++)
-                    {
-                        bones[j] = _tentacles[tentacleNumber].Bones[j];
-                    }
-
-                    for (int currentBone = bones.Length - 2; currentBone > 1; currentBone--)
-                    {
-                        //Get vector from bone to target
-                        Vector3 redVector = (bones[currentBone].position - _randomTargets[tentacleNumber].position).normalized;
-
-                        Vector3 greenVector = (bones[currentBone].position - bones[bones.Length-1].position).normalized;
-
-                        float angle = Vector3.Angle(greenVector, redVector);
-
-                        bones[i].RotateAround(bones[0].position, Vector3.Cross(greenVector, redVector), angle);
-                    }
-
-                    for (int j = 0; j < _tentacles[tentacleNumber].Bones.Length - 1; j++)
-                    {
-                        _tentacles[tentacleNumber].Bones[j] = bones[j];
-                    }
-
-                    positions[tentacleNumber] = bones;
-
-                    if (Vector3.Distance(bones[bones.Length - 1].position, _randomTargets[tentacleNumber].position) <= tolerance)
-                    {
-                        i = maxIterations;
-                    }
-
+                    targetDir = _randomTargets[firstIter].position;
+                }
+                else
+                {
+                    targetDir = _target.position;
                 }
 
-            }
+                if (!alreadyLooped[firstIter] && maxAttempts > attempts[firstIter])
+                {
+                    for (int secndIter = 0; secndIter < _tentacles[firstIter].Bones.Length; secndIter++)
+                    {
+                        Vector3 firstVal = _tentacles[firstIter].Bones[_tentacles[firstIter].Bones.Length - 1].position - _tentacles[firstIter].Bones[secndIter].position;
+                        Vector3 scndVal = targetDir - _tentacles[firstIter].Bones[secndIter].position;
 
+                        float prodValue = 0f;
+                        Vector3 crossValue = Vector3.zero;
+                        float magnitudeVal;
+
+                        if (magnitudeTolerance >= firstVal.magnitude * scndVal.magnitude)
+                        {
+                            magnitudeVal = 0f;
+                        }
+                        else
+                        {
+                            prodValue = Vector3.Dot(firstVal, scndVal);
+                            crossValue = Vector3.Cross(firstVal.normalized, scndVal.normalized);
+                            magnitudeVal = crossValue.magnitude;
+                        }
+
+                        double angleVal = (Math.Acos(prodValue / (firstVal.magnitude * scndVal.magnitude)) % Math.PI) * (double)((magnitudeVal > 0f) ? 1 : (-1));
+
+                        if (angleVal > angleComparative)
+                        {
+                            _tentacles[firstIter].Bones[secndIter].Rotate(crossValue.normalized, (float)angleVal * angleMultiplier, Space.World);
+                        }
+
+                        _tentacles[firstIter].Bones[secndIter].localRotation = GetSwing(_tentacles[firstIter].Bones[secndIter].localRotation);
+                    }
+
+                    attempts[firstIter]++;
+                }
+
+                alreadyLooped[firstIter] = (targetDir - _tentacles[firstIter].Bones[_tentacles[firstIter].Bones.Length - 1].position).magnitude <= loopedTolerance;
+
+                if (targetDir != targetPositions[firstIter])
+                {
+                    attempts[firstIter] = 0;
+                    targetPositions[firstIter] = targetDir;
+                }
+            }
         }
-            
+
+        public Quaternion GetTwist(Quaternion rot)
+        {
+            return GetSwing(rot) * CalculateTwist(rot);
+        }
+
+        private Quaternion CalculateTwist(Quaternion rot)
+        {
+            return new Quaternion(0f, rot.y, 0f, rot.w).normalized;
+        }
+
+        public Quaternion GetSwing(Quaternion rot)
+        {
+            rot = new Quaternion(rot.x, Mathf.Clamp(rot.y, 0f, 1f), Mathf.Clamp(rot.z, 0f, 10f), rot.w);
+            (rot * Quaternion.Inverse(new Quaternion(0f, rot.y, 0f, rot.w).normalized)).ToAngleAxis(out var angle, out var axis);
+            return Quaternion.AngleAxis(Mathf.Clamp(angle, 0f, _swingMax), axis);
+        }
     }
 
-
-        
-
-        #endregion
-
-
-
-
-
-
+    #endregion
 }
-

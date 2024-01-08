@@ -1357,9 +1357,9 @@ MonoBehaviour:
   - {fileID: 1946850105}
   - {fileID: 1120208754}
   _twistMin: 0
-  _twistMax: 0
+  _twistMax: 40
   _swingMin: 0
-  _swingMax: 0
+  _swingMax: 40
   _updateTwistSwingLimits: 0
 --- !u!1 &319744859
 GameObject:
@@ -5918,7 +5918,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _myOctopus: {fileID: 310279045}
   _mode: 1
-  _movementSpeed: 5
+  _movementSpeed: 1
   _region: {fileID: 0}
 --- !u!135 &1418656082
 SphereCollider:
