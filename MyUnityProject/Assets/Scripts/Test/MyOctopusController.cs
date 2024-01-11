@@ -12,13 +12,15 @@ namespace OctopusController
 
     public class MyOctopusController 
     {
-        MyTentacleController[] _tentacles =new  MyTentacleController[4];
+        MyTentacleController[] _tentacles = new  MyTentacleController[4];
 
         Transform _currentRegion;
         Transform _target;
         int currentRegion = 2;
 
-        Transform[] _randomTargets;// = new Transform[4];
+        Transform[] _randomTargets;
+
+        GameObject[] _ogTargets;
 
         //DEBUG
         Transform[][] positions = new Transform[4][];
@@ -36,6 +38,9 @@ namespace OctopusController
         bool[] alreadyLooped;
         int[] attempts;
         int maxAttempts;
+
+        //Game bools:
+        bool stopTheBall = true;
 
         //Defines
         double angleComparative = 0.025;
@@ -78,6 +83,8 @@ namespace OctopusController
             }
 
             _randomTargets = randomTargets;
+
+            _ogTargets = GameObject.FindGameObjectsWithTag("MovingTarget");
         }
 
         public void NotifyTarget(Transform target, Transform region)
@@ -115,12 +122,22 @@ namespace OctopusController
         }
 
         public void NotifyShoot() {
-            //TODO. what happens here?
-            Debug.Log("Shoot");
+            
+            if (stopTheBall)
+            {
+                _randomTargets[currentRegion] = _target;
 
-            _randomTargets[currentRegion] = _target;
+                wasBallShot = true;
+            }
+            stopTheBall = !stopTheBall;
+        }
 
-            wasBallShot = true;
+        public void ResetTentacles()
+        {
+            foreach(GameObject i in _ogTargets)
+            {
+                _randomTargets[i.GetComponent<MovingTarget>().id] = i.transform;
+            }
         }
 
         public void UpdateTentacles()
@@ -136,15 +153,7 @@ namespace OctopusController
         {
             for (int firstIter = 0; firstIter < _tentacles.Length; firstIter++)
             {
-                Vector3 targetDir;
-                if (firstIter != nearestTentacle || !wasBallShot)
-                {
-                    targetDir = _randomTargets[firstIter].position;
-                }
-                else
-                {
-                    targetDir = _target.position;
-                }
+                Vector3 targetDir = _randomTargets[firstIter].position;
 
                 if (!alreadyLooped[firstIter] && maxAttempts > attempts[firstIter])
                 {

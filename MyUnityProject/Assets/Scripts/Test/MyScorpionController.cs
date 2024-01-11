@@ -22,6 +22,7 @@ namespace OctopusController
         Transform newTransform;
 
         float[] tailBoneAngles;
+        float[] originalTailBoneAngles;
         Vector3[] bonePosCopy;
         Vector3[] tailBoneInverseDirection;
 
@@ -109,6 +110,11 @@ namespace OctopusController
             _tail = new MyTentacleController();
             _tail.LoadTentacleJoints(TailBase, TentacleMode.TAIL);
 
+            TailSetting();
+        }
+
+        void TailSetting()
+        {
             tailEndEffector = _tail.EndEffectorSphere;
 
             animationRange = 5f;
@@ -118,6 +124,7 @@ namespace OctopusController
 
             bonePosCopy = new Vector3[_tail.Bones.Length];
             tailBoneAngles = new float[_tail.Bones.Length];
+            originalTailBoneAngles = new float[_tail.Bones.Length];
             tailBoneInverseDirection = new Vector3[_tail.Bones.Length];
 
             Quaternion[] auxRotations = new Quaternion[_tail.Bones.Length];
@@ -129,12 +136,14 @@ namespace OctopusController
 
             _tail.Bones[0].rotation = Quaternion.identity;
             tailBoneAngles[0] = _tail.Bones[0].localEulerAngles.z;
+            originalTailBoneAngles[0] = _tail.Bones[0].localEulerAngles.z;
 
             for (int i = 1; i < _tail.Bones.Length; ++i)
             {
                 _tail.Bones[i].rotation = Quaternion.identity;
 
                 tailBoneAngles[i] = _tail.Bones[i].localEulerAngles.x;
+                originalTailBoneAngles[i] = _tail.Bones[i].localEulerAngles.x;
                 tailBoneInverseDirection[i - 1] = _tail.Bones[i].position - _tail.Bones[i - 1].position;
 
             }
@@ -150,10 +159,6 @@ namespace OctopusController
         //TODO: Check when to start the animation towards target and implement Gradient Descent method to move the joints.
         public void NotifyTailTarget(Transform target)
         {
-            //Debug.Log(tailEndEffector.position);
-            //Debug.Log(target.position);
-            //Debug.Log(Vector3.Distance(target.position, tailEndEffector.position));
-
             if(Vector3.Distance(target.position, tailEndEffector.position) < animationRange && !playTailAnimation)
             {
                 playTailAnimation = true;
@@ -218,6 +223,8 @@ namespace OctopusController
             magnus = _magnus;
             force = _force;
         }
+
+        
 
         //TODO: implement Gradient Descent method to move tail if necessary
         private void updateTail()
@@ -365,6 +372,10 @@ namespace OctopusController
             }
         }
 
+        public void ResetTail()
+        {
+            TailSetting();
+        }
 
         private Quaternion DivideByEscalar(Quaternion quat, float escalar)
         {

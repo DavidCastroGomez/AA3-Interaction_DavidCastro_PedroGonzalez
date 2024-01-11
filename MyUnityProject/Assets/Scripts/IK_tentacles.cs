@@ -15,7 +15,7 @@ public class IK_tentacles : MonoBehaviour
     Transform[] _randomTargets;
 
 
-    MyOctopusController _myController = new MyOctopusController();
+    public MyOctopusController _myController = new MyOctopusController();
     
 
 

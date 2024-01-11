@@ -11,6 +11,9 @@ public class ResetScene : MonoBehaviour
     [SerializeField]
     private GameObject scorpion;
 
+    [SerializeField]
+    private GameObject octopus;
+
     private Vector3 ballPosition;
     private Vector3 scorpionPosition;
 
@@ -35,6 +38,7 @@ public class ResetScene : MonoBehaviour
             iK_Scorpion.ResetScorpion(scorpionPosition);
             ball.GetComponent<MovingBall>().ResetBall();
 
+            octopus.GetComponent<IK_tentacles>()._myController.ResetTentacles();
         }
     }
 }
