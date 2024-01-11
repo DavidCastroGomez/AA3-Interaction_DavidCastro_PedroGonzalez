@@ -7,11 +7,11 @@ public class MovingTarget: MonoBehaviour
     [SerializeField]
     IK_tentacles _myOctopus;
 
-
-    //random will create an object moving randomly within a box.
     enum MovingMode {RANDOM, USERTARGET };
 
-    
+    [SerializeField]
+    public int id = -1;
+
     [SerializeField]
     MovingMode _mode;
 

@@ -22,6 +22,8 @@ public class MovingBall : MonoBehaviour
 
     bool _isMoving = false;
 
+    int multiplier = 1;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -43,21 +45,30 @@ public class MovingBall : MonoBehaviour
 
         if (_isMoving)
         {
-            transform.position += _scorpion.forceSlider.value * _dir * Time.deltaTime;
+            transform.position += _scorpion.forceSlider.value * _dir * Time.deltaTime * multiplier;
         }
 
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        _isMoving = true;
-        _dir = directionTarget.position - transform.position;
-        _dir.Normalize();
-        _myOctopus.NotifyShoot();
+        if (collision.transform.CompareTag("TailTop"))
+        {
+            _isMoving = true;
+            _dir = directionTarget.position - transform.position;
+            _dir.Normalize();
+            _myOctopus.NotifyShoot();
+        }
+
+        if (collision.transform.CompareTag("TentacleTop"))
+        {
+            multiplier = 0;
+        }
     }
 
     public void ResetBall()
     {
         _isMoving = false;
+        multiplier = 1;
     }
 }
