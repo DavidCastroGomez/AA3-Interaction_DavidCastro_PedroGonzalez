@@ -46,23 +46,19 @@ public class IK_Scorpion : MonoBehaviour
     public UnityEngine.UI.Slider magnusSlider;
 
     float forceSliderMultipier = 100;
-    float magnusSliderMultipier = 1;
+    float magnusSliderMultipier = .25f;
 
     Vector3 originalDirection;
     Vector3 angleX, angleY, angleZ;
 
     Vector3[] normals;
 
-
-
     private const float LEG_VERTICAL_OFFSET = 10f;
 
     private const float BODY_HEIGHT = 0.5f;
 
-    //DEBUG
     Vector3[] postions;
 
-    // Start is called before the first frame update
     void Start()
     {
         originalDirection = -Body.forward;
@@ -99,7 +95,6 @@ public class IK_Scorpion : MonoBehaviour
             {
                 forceSliderMultipier *= -1;
             }
-
         }
         
         if (Input.GetKeyUp(KeyCode.Space) && !animPlaying)
@@ -112,7 +107,6 @@ public class IK_Scorpion : MonoBehaviour
 
         if (animTime < animDuration && animTime > 0 && animPlaying)
         {
-
             SetBodyPosition();
 
             SetBasesHeight();

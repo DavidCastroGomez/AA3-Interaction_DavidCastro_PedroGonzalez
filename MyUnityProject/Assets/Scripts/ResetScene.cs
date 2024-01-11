@@ -14,6 +14,9 @@ public class ResetScene : MonoBehaviour
     [SerializeField]
     private GameObject octopus;
 
+    [SerializeField]
+    private GameObject blueTarget;
+
     private Vector3 ballPosition;
     private Vector3 scorpionPosition;
 
@@ -27,7 +30,6 @@ public class ResetScene : MonoBehaviour
         iK_Scorpion = scorpion.GetComponent<IK_Scorpion>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.R))
@@ -39,6 +41,8 @@ public class ResetScene : MonoBehaviour
             ball.GetComponent<MovingBall>().ResetBall();
 
             octopus.GetComponent<IK_tentacles>()._myController.ResetTentacles();
+
+            blueTarget.GetComponent<MovingTarget>().ResetTarget();
         }
     }
 }

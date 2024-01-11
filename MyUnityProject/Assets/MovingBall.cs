@@ -1,6 +1,31 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
+
+class OurRB
+{
+    public Vector3 acceleration;
+    public Vector3 gravity;
+    public Vector3 velocity;
+    public Vector3 position;
+    public float magnus;
+
+    public OurRB()
+    {
+        acceleration = new Vector3();
+        gravity = new Vector3();
+        velocity = new Vector3();
+        position = new Vector3();
+    }
+
+    public void Update()
+    {
+        Vector3 newVelocity = acceleration * Time.deltaTime;
+        velocity += newVelocity + new Vector3(-magnus, 0, 0);
+        position += velocity * Time.deltaTime;
+    }
+}
 
 public class MovingBall : MonoBehaviour
 {
@@ -10,7 +35,6 @@ public class MovingBall : MonoBehaviour
     [SerializeField]
     IK_Scorpion _scorpion;
 
-    //movement speed in units per second
     [Range(-1.0f, 5.0f)]
     [SerializeField]
     private float _movementSpeed = 2.5f;
@@ -20,34 +44,23 @@ public class MovingBall : MonoBehaviour
 
     Vector3 _dir;
 
-    bool _isMoving = false;
+    public bool _isMoving = false;
 
-    int multiplier = 1;
+    OurRB thisRB = new OurRB();
 
-    // Start is called before the first frame update
     void Start()
     {
-        
+        thisRB.position = transform.position;
+        thisRB.gravity.y = -0.981f;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        transform.rotation = Quaternion.identity;
-
-        //get the Input from Horizontal axis
-        float horizontalInput = Input.GetAxis("Horizontal");
-        //get the Input from Vertical axis
-        float verticalInput = Input.GetAxis("Vertical");
-
-        //update the position
-        //transform.position = transform.position + new Vector3(-horizontalInput * _movementSpeed * Time.deltaTime, verticalInput * _movementSpeed * Time.deltaTime, 0);
-
         if (_isMoving)
         {
-            transform.position += _scorpion.forceSlider.value * _dir * Time.deltaTime * multiplier;
+            thisRB.Update();
+            transform.position = thisRB.position;
         }
-
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -55,20 +68,31 @@ public class MovingBall : MonoBehaviour
         if (collision.transform.CompareTag("TailTop"))
         {
             _isMoving = true;
+
             _dir = directionTarget.position - transform.position;
             _dir.Normalize();
+
+            thisRB.acceleration = thisRB.gravity;
+            thisRB.velocity = _scorpion.forceSlider.value * _dir;
+            thisRB.magnus = _scorpion.magnusSlider.value;
+
             _myOctopus.NotifyShoot();
         }
 
         if (collision.transform.CompareTag("TentacleTop"))
         {
-            multiplier = 0;
+            thisRB.acceleration = Vector3.zero;
+            thisRB.velocity = Vector3.zero;
+            thisRB.magnus = 0;
         }
     }
 
     public void ResetBall()
     {
         _isMoving = false;
-        multiplier = 1;
+        thisRB.position = transform.position;
+        thisRB.acceleration = Vector3.zero;
+        thisRB.velocity = Vector3.zero;
+        thisRB.magnus = 0;
     }
 }
