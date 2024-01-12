@@ -34,10 +34,9 @@ public class ResetScene : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.R))
         {
-            ball.transform.position = ballPosition;
-            scorpion.transform.position = scorpionPosition;
-
             iK_Scorpion.ResetScorpion(scorpionPosition);
+
+            ball.transform.position = ballPosition;
             ball.GetComponent<MovingBall>().ResetBall();
 
             octopus.GetComponent<IK_tentacles>()._myController.ResetTentacles();

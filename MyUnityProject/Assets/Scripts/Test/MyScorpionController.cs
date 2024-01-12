@@ -17,7 +17,7 @@ namespace OctopusController
         Transform tailEndEffector;
         MyTentacleController _tail;
         float animationRange;
-        bool playTailAnimation;
+        public bool playTailAnimation;
         float modifyDelta;
         Transform newTransform;
 
@@ -129,14 +129,14 @@ namespace OctopusController
 
             Quaternion[] auxRotations = new Quaternion[_tail.Bones.Length];
 
+            _tail.Bones[0].rotation = Quaternion.identity;
+            tailBoneAngles[0] = _tail.Bones[0].localEulerAngles.z;
+            originalTailBoneAngles[0] = _tail.Bones[0].localEulerAngles.z;
+
             for (int i = 0; i < _tail.Bones.Length; ++i)
             {
                 auxRotations[i] = _tail.Bones[i].rotation;
             }
-
-            _tail.Bones[0].rotation = Quaternion.identity;
-            tailBoneAngles[0] = _tail.Bones[0].localEulerAngles.z;
-            originalTailBoneAngles[0] = _tail.Bones[0].localEulerAngles.z;
 
             for (int i = 1; i < _tail.Bones.Length; ++i)
             {

@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 public class IK_Scorpion : MonoBehaviour
 {
-    MyScorpionController _myController= new MyScorpionController();
+    public MyScorpionController _myController= new MyScorpionController();
 
     public IK_tentacles _myOctopus;
 
@@ -46,7 +46,7 @@ public class IK_Scorpion : MonoBehaviour
     public UnityEngine.UI.Slider magnusSlider;
 
     float forceSliderMultipier = 100;
-    float magnusSliderMultipier = .25f;
+    float magnusSliderMultipier = 10;
 
     Vector3 originalDirection;
     Vector3 angleX, angleY, angleZ;
@@ -58,6 +58,9 @@ public class IK_Scorpion : MonoBehaviour
     private const float BODY_HEIGHT = 0.5f;
 
     Vector3[] postions;
+
+    [SerializeField]
+    MovingBall ball;
 
     void Start()
     {
@@ -102,7 +105,7 @@ public class IK_Scorpion : MonoBehaviour
             NotifyStartWalk();
             animTime = 0;
             animPlaying = true;
-            _myController.SetFromSliderValues(magnusSlider.value, forceSlider.value);
+            _myController.SetFromSliderValues((magnusSlider.value / magnusSlider.maxValue) * 0.5f, forceSlider.value);
         }
 
         if (animTime < animDuration && animTime > 0 && animPlaying)
@@ -142,8 +145,6 @@ public class IK_Scorpion : MonoBehaviour
         for(int i = 0; i < futureLegBases.Length; i++)
         {
             Vector3 startRayPosition = futureLegBases[i].position + new Vector3(0, LEG_VERTICAL_OFFSET, 0);
-
-            //Debug.DrawLine(startRayPosition, startRayPosition + (Vector3.down * LEG_VERTICAL_OFFSET), Color.blue, 0.016f);
 
             RaycastHit hit;
 
@@ -195,7 +196,7 @@ public class IK_Scorpion : MonoBehaviour
         forceSlider.value = 0;
         animPlaying = false;
 
-        Body.position = resetPos;
+        Body.position = resetPos + new Vector3(0,BODY_HEIGHT,0);
 
         pathIndex = 0;
 
@@ -205,7 +206,6 @@ public class IK_Scorpion : MonoBehaviour
 
         _myController.ResetLegs();
         _myController.ResetTail();
-
     }
 
 
