@@ -18,7 +18,6 @@ public class IK_tentacles : MonoBehaviour
     public MyOctopusController _myController = new MyOctopusController();
     
 
-
     [Header("Exercise 3")]
     [SerializeField, Range(0, 360)]
     float _twistMin ;
