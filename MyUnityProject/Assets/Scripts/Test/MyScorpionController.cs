@@ -17,11 +17,12 @@ namespace OctopusController
         Transform tailEndEffector;
         MyTentacleController _tail;
         float animationRange;
-        bool playTailAnimation;
+        public bool playTailAnimation;
         float modifyDelta;
         Transform newTransform;
 
         float[] tailBoneAngles;
+        float[] originalTailBoneAngles;
         Vector3[] bonePosCopy;
         Vector3[] tailBoneInverseDirection;
 
@@ -38,11 +39,26 @@ namespace OctopusController
         float distanceUpThreshold;
         float distanceDownThreshold;
         float lerpAlpha = 0.1f;
-        Vector3[] storeFutureBases = new Vector3[6];
-        List<float> distances = new List<float>();
+        public Vector3[] storeFutureBases = new Vector3[6];
+        public Vector3[] initialStepPosition = new Vector3[6];
+        public float[] stepTimePerLeg = new float[6];
+        public float timeToMoveLeg;
+
+        List<float> distanceBetweenBones = new List<float>();
+
+        bool walking = false;
+
+        //Make foot go up and down
+        float[] halfDistanceToNextBasePosition;
+        float[] actualHeight;
+        float stepHeight;
 
         Vector3[] positions;
         Vector3[][] returnPos;
+
+        //Magnus values
+        float magnus = .0f;
+        float force = .0f;
 
         #region public
         public Vector3[][] aaa()
@@ -55,30 +71,36 @@ namespace OctopusController
         public void InitLegs(Transform[] LegRoots,Transform[] LegFutureBases, Transform[] LegTargets)
         {
             _legs = new MyTentacleController[LegRoots.Length];
-            //Legs init
-            for(int i = 0; i < LegRoots.Length; i++)
+
+            legFutureBases = LegFutureBases;
+            legTargets = LegTargets;
+
+            actualHeight = new float[legFutureBases.Length];
+            halfDistanceToNextBasePosition = new float[legFutureBases.Length];
+            returnPos = new Vector3[6][];
+
+            for (int i = 0; i < LegRoots.Length; i++)
             {
                 _legs[i] = new MyTentacleController();
                 _legs[i].LoadTentacleJoints(LegRoots[i], TentacleMode.LEG);
-                //TODO: initialize anything needed for the FABRIK implementation
 
                 movement[i] = false;
 
                 storeFutureBases[i] = _legs[i].Bones[0].position;
+                actualHeight[i] = storeFutureBases[i].y;
+                halfDistanceToNextBasePosition[i] = 0;
             }
 
-            distanceUpThreshold = 0.1f;
-            distanceDownThreshold = 0.01f;
-            legFutureBases = LegFutureBases;
-            legTargets = LegTargets;
+            distanceUpThreshold = 0.9f;
+            distanceDownThreshold = 0.5f;
 
-            returnPos = new Vector3[6][];
-
+            timeToMoveLeg = 0.2f;
+            stepHeight = 0.33f;
 
 
             for (int i = 1; i < _legs[0].Bones.Length; i++)
             {
-                distances.Add(Math.Abs(Vector3.Distance(_legs[0].Bones[i].position, _legs[0].Bones[i - 1].position)));
+                distanceBetweenBones.Add(Math.Abs(Vector3.Distance(_legs[0].Bones[i].position, _legs[0].Bones[i - 1].position)));
             }
 
         }
@@ -87,8 +109,12 @@ namespace OctopusController
         {
             _tail = new MyTentacleController();
             _tail.LoadTentacleJoints(TailBase, TentacleMode.TAIL);
-            //TODO: Initialize anything needed for the Gradient Descent implementation
 
+            TailSetting();
+        }
+
+        void TailSetting()
+        {
             tailEndEffector = _tail.EndEffectorSphere;
 
             animationRange = 5f;
@@ -98,23 +124,26 @@ namespace OctopusController
 
             bonePosCopy = new Vector3[_tail.Bones.Length];
             tailBoneAngles = new float[_tail.Bones.Length];
+            originalTailBoneAngles = new float[_tail.Bones.Length];
             tailBoneInverseDirection = new Vector3[_tail.Bones.Length];
 
             Quaternion[] auxRotations = new Quaternion[_tail.Bones.Length];
+
+            _tail.Bones[0].rotation = Quaternion.identity;
+            tailBoneAngles[0] = _tail.Bones[0].localEulerAngles.z;
+            originalTailBoneAngles[0] = _tail.Bones[0].localEulerAngles.z;
 
             for (int i = 0; i < _tail.Bones.Length; ++i)
             {
                 auxRotations[i] = _tail.Bones[i].rotation;
             }
 
-            _tail.Bones[0].rotation = Quaternion.identity;
-            tailBoneAngles[0] = _tail.Bones[0].localEulerAngles.z;
-
             for (int i = 1; i < _tail.Bones.Length; ++i)
             {
                 _tail.Bones[i].rotation = Quaternion.identity;
 
                 tailBoneAngles[i] = _tail.Bones[i].localEulerAngles.x;
+                originalTailBoneAngles[i] = _tail.Bones[i].localEulerAngles.x;
                 tailBoneInverseDirection[i - 1] = _tail.Bones[i].position - _tail.Bones[i - 1].position;
 
             }
@@ -130,16 +159,11 @@ namespace OctopusController
         //TODO: Check when to start the animation towards target and implement Gradient Descent method to move the joints.
         public void NotifyTailTarget(Transform target)
         {
-            //Debug.Log(tailEndEffector.position);
-            //Debug.Log(target.position);
-            //Debug.Log(Vector3.Distance(target.position, tailEndEffector.position));
-
             if(Vector3.Distance(target.position, tailEndEffector.position) < animationRange && !playTailAnimation)
             {
                 playTailAnimation = true;
                 tailTarget = target;
 
-                Debug.Log("in");
                 return;
             }
 
@@ -152,7 +176,7 @@ namespace OctopusController
         //TODO: Notifies the start of the walking animation
         public void NotifyStartWalk()
         {
-
+            walking = true;
         }
 
         //TODO: create the apropiate animations and update the IK from the legs and tail
@@ -163,7 +187,9 @@ namespace OctopusController
             {
                 updateTail();
             }
-            updateLegPos();
+
+            if(walking)
+                updateLegPos();
         }
         #endregion
 
@@ -172,41 +198,43 @@ namespace OctopusController
         //TODO: Implement the leg base animations and logic
         private void updateLegPos()
         {
-            //check for the distance to the futureBase, then if it's too far away start moving the leg towards the future base position
-            //
-
             for(int i = 0; i < _legs.Length; i++)
             {
-                if (Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) > distanceUpThreshold && !movement[i])
+                if (Vector3.Distance(_legs[i].Bones[0].position, legFutureBases[i].position) > distanceUpThreshold && !movement[i])
                 {
                     movement[i] = true;
                     storeFutureBases[i] = legFutureBases[i].position;
-                    
+                    initialStepPosition[i] = _legs[i].Bones[0].position;
+                    actualHeight[i] = legFutureBases[i].position.y;
+                    halfDistanceToNextBasePosition[i] = Vector3.Distance(storeFutureBases[i], _legs[i].Bones[0].position) / 2;
+                    stepTimePerLeg[i] = 0;
                 }
-                else if(movement[i] && Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold)
+                else if (Vector3.Distance(_legs[i].Bones[0].position, storeFutureBases[i]) < distanceDownThreshold)
                 {
                     movement[i] = false;
-                    storeFutureBases[i] = _legs[i].Bones[0].position;
-
                 }
 
                 updateLegs(_legs[i].Bones, legTargets[i], storeFutureBases[i], i);
-
-
             }
-
-
         }
+
+        public void SetFromSliderValues(float _magnus, float _force)
+        {
+            magnus = _magnus;
+            force = _force;
+        }
+
+        
+
         //TODO: implement Gradient Descent method to move tail if necessary
         private void updateTail()
         {
-
             if (Vector3.Distance(tailTarget.position, tailEndEffector.position) > tailDistanceToStop)
             {
-                CCD();
+                CCD(new Vector3(magnus * -0.5f, 0f, 0f) + tailTarget.position);
             }
-
         }
+
         //TODO: implement fabrik method to move legs 
         private void updateLegs(Transform[] bones, Transform legBase, Vector3 futureBase, int index)
         {
@@ -217,23 +245,30 @@ namespace OctopusController
                 positions[k] = new Vector3(bones[k].position.x, bones[k].position.y, bones[k].position.z);
             }
 
-            
-            
-            positions[0] = Vector3.LerpUnclamped(positions[0], futureBase, 0.4f);
+            stepTimePerLeg[index] += Time.deltaTime;
 
-            
-            for (int j = 1; j < positions.Length; j++)
+            positions[0] = Vector3.Lerp(initialStepPosition[index], storeFutureBases[index], stepTimePerLeg[index] / timeToMoveLeg);
+
+            if (halfDistanceToNextBasePosition[index] != 0)
             {
+                float heightModifier = 1 - Math.Abs(Vector3.Distance(positions[0], futureBase) - halfDistanceToNextBasePosition[index]) / halfDistanceToNextBasePosition[index]; //Transform distance to next position to a rate which modifies the height 
+
+                positions[0].y = futureBase.y + heightModifier * stepHeight;
+            }
+
+
+            for (int j = 1; j < positions.Length; j++)
+            { 
                 Vector3 direction = positions[j] - positions[j - 1];
 
                 direction.Normalize();
 
-                positions[j] = positions[j - 1] + direction * distances[j - 1];
+                positions[j] = positions[j - 1] + direction * distanceBetweenBones[j - 1];
             }
 
             positions[positions.Length - 1] = legBase.position;
 
-            distances.Reverse();
+            distanceBetweenBones.Reverse();
             
             for (int j = positions.Length - 2; j >= 0; j--)
             {
@@ -242,10 +277,10 @@ namespace OctopusController
                 direction.Normalize();
 
 
-                positions[j] = positions[j + 1] + direction * distances[j];
+                positions[j] = positions[j + 1] + direction * distanceBetweenBones[j];
             }
 
-            distances.Reverse();
+            distanceBetweenBones.Reverse();
 
             for (int i = 0; i < bones.Length - 1; i++)
             {
@@ -271,24 +306,23 @@ namespace OctopusController
             returnPos[index] = positions;
         }
 
-        private void CCD()
+        private void CCD(Vector3 magnusTarget)
         {
             for (int i = 0; i < tailBoneAngles.Length; ++i)
             {
-                float distanceToTarget1 = Vector3.Distance(TheMath(), tailTarget.position);
-
+                float distanceToTarget1 = Vector3.Distance(magnusTarget, TheMath());
                 tailBoneAngles[i] += modifyDelta;
-                float distanceToTarget2 = Vector3.Distance(TheMath(), tailTarget.position);
+
+                float distanceToTarget2 = Vector3.Distance(magnusTarget, TheMath());
                 tailBoneAngles[i] -= modifyDelta;
 
-                tailBoneAngles[i] = tailBoneAngles[i] - 50 * ((distanceToTarget2 - distanceToTarget1) / modifyDelta);
+                tailBoneAngles[i] -= force * ((distanceToTarget2 - distanceToTarget1) / modifyDelta);
             }
             
             Quaternion rotation = _tail.Bones[0].rotation;
             
             for (int i = 0; i < tailBoneAngles.Length; i++)
             {
-
                 if (i == 0)
                 {
                     rotation *= Quaternion.AngleAxis(tailBoneAngles[i], Vector3.forward);
@@ -299,6 +333,11 @@ namespace OctopusController
                 }
 
                 _tail.Bones[i].rotation = rotation;
+
+                if (Vector3.Distance(magnusTarget, TheMath()) < .25f)
+                {
+                    break;
+                }
             }
             
         }
@@ -320,16 +359,23 @@ namespace OctopusController
                 }
 
                 prevPoint += rotation * tailBoneInverseDirection[i];
-
-                //_tail.Bones[i].position = prevPoint;
-
             }
-
-           //tailEndEffector.position = prevPoint;
 
             return prevPoint;
         }
 
+        public void ResetLegs()
+        {
+            for(int i = 0; i < legFutureBases.Length; i++)
+            {
+                storeFutureBases[i] = legFutureBases[i].position;
+            }
+        }
+
+        public void ResetTail()
+        {
+            TailSetting();
+        }
 
         private Quaternion DivideByEscalar(Quaternion quat, float escalar)
         {
@@ -342,5 +388,4 @@ namespace OctopusController
         #endregion
 
     }
-
 }
