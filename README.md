@@ -19,6 +19,7 @@ Email: pedro.gonzalez@enti.cat
 MAGNUS FORMULA:
 
 velocity += (acceleration + new Vector3(-magnus, 0, 0)) * Time.deltaTime;
+
 position += velocity * Time.deltaTime;
 
 EXERCISE IMPLEMENTATION LOCATION:
