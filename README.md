@@ -1,4 +1,4 @@
-# AA2-Inverse_Kinematics_DavidCastro_PedroGonzalez
+# AA3-Interaction_DavidCastro_PedroGonzalez
 
 AUTHORS
 
